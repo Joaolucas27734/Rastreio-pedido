@@ -87,6 +87,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     COL_LINK = col("LINK")
     COL_OBS = col("ATUALIZAÇÃO")
     COL_STATUS_LOG = col("STATUS LOGÍSTICO")
+    COL_ACOMPANHAMENTO = col("ACOMPANHAMENTO")
     COL_DATA_EVENTO = col("DATA DO EVENTO")
     COL_HASH = col("HASH DO EVENTO")
     COL_ULTIMA_LEITURA = col("ÚLTIMA LEITURA")
@@ -338,8 +339,12 @@ def resolver_status_logistico(eventos):
 
     # 2️⃣ FALHA se último evento for falha real
     tipo_falha, motivo_falha = detectar_tipo_falha(texto_ultimo)
-    if tipo_falha:
-        return "FALHA", f"{tipo_falha} | {motivo_falha}"
+
+    # Nunca retorna "FALHA" como status logístico
+    if tipo_falha == "IMPORTAÇÃO":
+        return "Em trânsito", "Falha na importação"
+    elif tipo_falha in ["DEVOLUÇÃO", "DESTRUIDO"]:
+        return "Em trânsito", "Falha na entrega"
 
     # 3️⃣ Retirada
     if any(p in texto_ultimo for p in [
@@ -449,6 +454,12 @@ def processar_linha(pedido, row):
         add_update(row_atual, COL_STATUS_LOG, status_novo)
         add_update(row_atual, COL_DATA_EVENTO, data)
         add_update(row_atual, COL_HASH, hash_novo)
+
+        # Grava falha apenas na coluna de acompanhamento, se existir
+        if motivo_falha:
+            add_update(row_atual, COL_ACOMPANHAMENTO, motivo_falha)
+        else:
+            add_update(row_atual, COL_ACOMPANHAMENTO, "")  # limpa caso não haja falha
 
     except Exception as e:
         log(f"❌ Erro linha {row_atual}: {e}")
