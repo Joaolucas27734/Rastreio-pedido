@@ -94,7 +94,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     COL_HASH = col("HASH DO EVENTO")
     COL_ULTIMA_LEITURA = col("ULTIMA LEITURA")
     COL_FRETE = col("FRETE")
-    COL_PEDIDO = col("Pedido")
+    COL_PEDIDO = col("PEDIDO")
 
     # 🔒 Snapshot da planilha
     dados = sheet.get_all_values()
