@@ -84,7 +84,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     COL_LINK = 10
     COL_OBS = 11
     COL_STATUS_LOG = 12
-    COL_ACOMPANHAMENTO = 14
+    COL_ESTUDO_DE_CASO = 15
     COL_DATA_EVENTO = 21
     COL_HASH = 20
     COL_ULTIMA_LEITURA = 22
@@ -454,16 +454,16 @@ def processar_linha(pedido, row):
         add_update(row_atual, COL_DATA_EVENTO, data)
         add_update(row_atual, COL_HASH, hash_novo)
 
-        # Grava falha apenas na coluna de acompanhamento, se existir
+        # Grava falha apenas na coluna ESTUDO DE CASO
         if motivo_falha:
-            add_update(row_atual, COL_ACOMPANHAMENTO, motivo_falha)
+            add_update(row_atual, COL_ESTUDO_DE_CASO, motivo_falha)
         else:
-            add_update(row_atual, COL_ACOMPANHAMENTO, "")  # limpa caso não haja falha
+            add_update(row_atual, COL_ESTUDO_DE_CASO, "")
 
     except Exception as e:
         log(f"❌ Erro linha {row_atual}: {e}")
         add_update(row_atual, COL_OBS, "❌ ERRO TÉCNICO — Falha ao consultar rastreio.")
-        add_update(row_atual, COL_ACOMPANHAMENTO, "Erro no rastreio")
+        add_update(row_atual, COL_ESTUDO_DE_CASO, "Erro no rastreio")
 
 if __name__ == "__main__":
     for aba in ABAS_RASTREAVEIS:
