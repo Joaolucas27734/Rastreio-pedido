@@ -111,7 +111,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for row in linhas:
-            pedido = str(row[COL_PEDIDO]).strip()
+            pedido = str(row[COL_PEDIDO - 1]).strip()
             if pedido:
                 futures.append(
                     executor.submit(processar_linha, pedido, row)
