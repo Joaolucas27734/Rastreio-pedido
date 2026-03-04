@@ -414,6 +414,7 @@ def processar_linha(pedido, row):
     driver, wait = get_driver()
 
     try:
+        log(f"🌐 Abrindo página de rastreio: {link}")
         driver.get(link)
         time.sleep(1)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -421,12 +422,14 @@ def processar_linha(pedido, row):
         wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".rptn-order-tracking"))
         )
+        log("📦 Container de rastreio carregado")
 
         wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".rptn-order-tracking-event"))
         )
 
         eventos = driver.find_elements(By.CSS_SELECTOR, ".rptn-order-tracking-event")
+        log(f"📊 Eventos encontrados: {len(eventos)}")
 
         if not eventos:
             add_update(row_atual, COL_OBS, "❌ ERRO DE RASTREAMENTO — Nenhum evento encontrado")
@@ -436,11 +439,13 @@ def processar_linha(pedido, row):
         status_novo, motivo_falha = resolver_status_logistico(eventos)
 
         ultimo = eventos[0]
+        log("🔎 Lendo último evento...")
 
         data = get_text(ultimo, "rptn-order-tracking-date")
         label = get_text(ultimo, "rptn-order-tracking-label")
         local = get_text(ultimo, "rptn-order-tracking-location")
         desc = get_text(ultimo, "rptn-order-tracking-description")
+        log(f"📌 Evento capturado: {data} | {label} | {local}")
 
         hash_novo = gerar_hash_evento(status_novo, data, label, desc, local)
 
