@@ -1,3 +1,5 @@
+# requirements.txt
+
 selenium
 webdriver-manager
 pandas
