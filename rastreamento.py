@@ -79,15 +79,21 @@ def rodar_rastreamento_para_aba(nome_aba: str):
 
     header = [h.strip() for h in sheet.row_values(1)]
 
-    # ===== Definição fixa de colunas =====
-    COL_PEDIDO = 1
-    COL_LINK = 10
-    COL_OBS = 11
-    COL_STATUS_LOG = 12
-    COL_ESTUDO_DE_CASO = 15
-    COL_DATA_EVENTO = 21
-    COL_HASH = 20
-    COL_ULTIMA_LEITURA = 22
+    # ===== Mapear colunas pelo nome =====
+    def get_col_index(nome_coluna):
+        try:
+            return header.index(nome_coluna.strip()) + 1
+        except ValueError:
+            raise RuntimeError(f"Coluna obrigatória não encontrada: {nome_coluna}")
+
+    COL_PEDIDO = get_col_index("ORDER ID")
+    COL_LINK = get_col_index("LINK")
+    COL_OBS = get_col_index("ATUALIZAÇÃO")
+    COL_STATUS_LOG = get_col_index("STATUS LOGÍSTICO")
+    COL_ESTUDO_DE_CASO = get_col_index("ESTUDO DE CASO")
+    COL_HASH = get_col_index("HASH DO EVENTO")
+    COL_DATA_EVENTO = get_col_index("DATA DO EVENTO")
+    COL_ULTIMA_LEITURA = get_col_index("ÚLTIMA LEITURA")
 
     # 🔒 Snapshot da planilha
     dados = sheet.get_all_values()
