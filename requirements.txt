@@ -1,0 +1,10 @@
+
+# requirements.txt
+
+streamlit
+fastapi
+uvicorn
+pandas
+requests
+gspread
+google-auth
