@@ -362,15 +362,15 @@ def resolver_status_logistico(eventos):
         "nova tentativa",
         "tentativa de entrega",
     ]):
-        return "TENTATIVA DE ENTREGA", ""
+        return "Em trânsito", "Falha na entrega"
 
-    # 5️⃣ Padrão
+    # 5️⃣ Padrão → Em trânsito
     return "Em trânsito", ""
 
 def processar_linha(pedido, row):
     # Fala que essas variáveis são globais
     global COL_LINK, COL_OBS, COL_STATUS_LOG
-    global COL_ACOMPANHAMENTO, COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, index_por_pedido
+    global COL_ACOMPANHAMENTO, COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, COL_ESTUDO_DE_CASO, index_por_pedido
 
     row_atual = index_por_pedido.get(str(pedido).strip())
     if not row_atual:
@@ -417,8 +417,8 @@ def processar_linha(pedido, row):
         eventos = driver.find_elements(By.CLASS_NAME, "rptn-order-tracking-event")
 
         if not eventos:
-            add_update(row_atual, COL_STATUS_LOG, "ERRO")
             add_update(row_atual, COL_OBS, "❌ ERRO DE RASTREAMENTO — Nenhum evento encontrado")
+            add_update(row_atual, COL_ESTUDO_DE_CASO, "Erro no rastreio")
             return
 
         status_novo, motivo_falha = resolver_status_logistico(eventos)
