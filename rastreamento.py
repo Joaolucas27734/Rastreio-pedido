@@ -341,12 +341,8 @@ def deve_rastrear(status_salvo, obs_atual, link):
 
 def resolver_status_logistico(eventos):
 
-    try:
-        texto_ultimo = normalizar_texto(
-            eventos[0].find_element(By.CLASS_NAME, "rptn-order-tracking-text").text
-        )
-    except Exception:
-        texto_ultimo = normalizar_texto(get_text(eventos[0], "rptn-order-tracking-label"))
+    ultimo = eventos[0].find_element(By.CLASS_NAME, "rptn-order-tracking-text")
+    texto_ultimo = normalizar_texto(ultimo.text)
 
     # 1️⃣ ENTREGA sempre ganha
     if eh_entregue_valido(texto_ultimo):
