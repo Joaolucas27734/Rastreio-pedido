@@ -416,7 +416,6 @@ def processar_linha(pedido, row):
     try:
         driver.get(link)
         time.sleep(1)
-        driver.execute_script("document.body.style.zoom='0.9'")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
         wait.until(
