@@ -50,8 +50,7 @@ BASE_BACKOFF = 2
 MAX_WORKERS = 2
 STALL_DIAS = 9 
 ABAS_RASTREAVEIS = [
-    "Pedidos | Ativo",
-    "Pedidos | Reenvio",
+    "PEDIDOS (GERAL)",
 ]
 
 SLA_FRETE = {
