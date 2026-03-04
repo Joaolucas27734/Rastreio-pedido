@@ -48,15 +48,9 @@ WAIT_SECONDS = 15
 MAX_RETRIES = 5
 BASE_BACKOFF = 2
 MAX_WORKERS = 2
-STALL_DIAS = 9 
 ABAS_RASTREAVEIS = [
     "PEDIDOS (GERAL)",
 ]
-
-SLA_FRETE = {
-    "SEDEX": 7,            # 2 a 5 dias úteis
-    "PROMOCIONAL": 15,     # 9 a 12 dias úteis
-}
 
 # ==================================================
 # LOG
@@ -75,7 +69,7 @@ thread_local = threading.local()
 def rodar_rastreamento_para_aba(nome_aba: str):
     global sheet, header
     global COL_LINK, COL_OBS, COL_STATUS_LOG
-    global COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, COL_RISCO, COL_FRETE
+    global COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA
     global index_por_pedido
 
     log(f"\n🔄 Iniciando rastreamento da aba: {nome_aba}")
@@ -86,14 +80,16 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     header = [h.strip() for h in sheet.row_values(1)]
 
     def col(nome):
+        if nome not in header:
+            raise RuntimeError(f"Coluna obrigatória não encontrada: {nome}")
         return header.index(nome) + 1
 
     COL_LINK = col("LINK")
     COL_OBS = col("ATUALIZAÇÃO")
+    COL_STATUS_LOG = col("STATUS LOGÍSTICO")
     COL_DATA_EVENTO = col("DATA DO EVENTO")
     COL_HASH = col("HASH DO EVENTO")
     COL_ULTIMA_LEITURA = col("ÚLTIMA LEITURA")
-    COL_FRETE = col("FRETE")
     COL_PEDIDO = col("ORDER ID")
 
     # 🔒 Snapshot da planilha
@@ -257,20 +253,6 @@ def detectar_tipo_falha(texto_eventos: str):
 
     return None, ""
 
-
-def normalizar_frete(frete_raw: str) -> str:
-    texto = (frete_raw or "").upper()
-
-    if "SEDEX" in texto or "2 A 5" in texto:
-        return "SEDEX"
-
-    if "PROMOCIONAL" in texto or "9 A 12" in texto or "GRÁTIS" in texto:
-        return "PROMOCIONAL"
-
-    # fallback seguro
-    return "PROMOCIONAL"
-
-
 def normalizar_texto(s: str) -> str:
     s = (s or "").strip().lower()
     s = re.sub(r"\s+", " ", s)
@@ -279,7 +261,8 @@ def normalizar_texto(s: str) -> str:
 
 def gerar_hash_evento(status_log: str, data_evento: str, label: str, desc: str, local: str) -> str:
     """
-    Hash muda se QUALQUER parte do último evento mudar.
+    Gera um hash único baseado no último evento.
+    O hash muda se QUALQUER parte do evento mudar.
     """
     payload = "|".join([
         normalizar_texto(status_log),
@@ -288,94 +271,9 @@ def gerar_hash_evento(status_log: str, data_evento: str, label: str, desc: str, 
         normalizar_texto(desc),
         normalizar_texto(local),
     ])
+
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()
-
-
-def parse_data_evento(data_str: str):
-    """
-    Tenta converter a data do evento para datetime.
-    Aceita comuns tipo:
-    - 08/01/2026
-    - 08/01/2026 10:12
-    - 08-01-2026
-    """
-    s = (data_str or "").strip()
-    if not s:
-        return None
-
-    # pega só o começo da data/hora se tiver lixo
-    s = re.sub(r"\s+", " ", s)
-
-    formatos = [
-        "%d/%m/%Y",
-        "%d/%m/%Y %H:%M",
-        "%d/%m/%Y %H:%M:%S",
-        "%d-%m-%Y",
-        "%d-%m-%Y %H:%M",
-        "%Y-%m-%d",
-        "%Y-%m-%d %H:%M",
-        "%Y-%m-%d %H:%M:%S",
-    ]
-
-    for fmt in formatos:
-        try:
-            return datetime.strptime(s, fmt)
-        except Exception:
-            continue
-
-    return None
-
-def calcular_risco(
-    status_log: str,
-    data_evento_str: str,
-    data_pedido_str: str,
-    frete: str,
-    dias_sem_atualizacao: int = STALL_DIAS
-) -> str:
-
-    status = (status_log or "").strip().upper()
-
-    if status == "TENTATIVA DE ENTREGA":
-        return "ATENÇÃO"
     
-    # 🚨 Estados críticos
-    if status in {"FALHA", "ERRO"}:
-        return "CRÍTICO"
-
-    # 🟢 Estados finais
-    if status in {"ENTREGUE", "AGUARDANDO RETIRADA"}:
-        return "NORMAL"
-
-    agora = datetime.now(TZ)
-
-    # =========================
-    # ⏰ ATRASO → DATA DO PEDIDO
-    # =========================
-    dt_pedido = parse_data_evento(data_pedido_str)
-    if dt_pedido and dt_pedido.tzinfo is None:
-        dt_pedido = dt_pedido.replace(tzinfo=TZ)
-
-    sla = SLA_FRETE.get(frete, 12)
-
-    if dt_pedido:
-        dias_pedido = (agora - dt_pedido).days
-        if dias_pedido > sla:
-            return "ATRASADO"
-
-    # =================================
-    # ⏳ SEM ATUALIZAÇÃO → DATA DO EVENTO
-    # =================================
-    dt_evento = parse_data_evento(data_evento_str)
-    if dt_evento and dt_evento.tzinfo is None:
-        dt_evento = dt_evento.replace(tzinfo=TZ)
-
-    if dt_evento:
-        dias_evento = (agora - dt_evento).days
-        if dias_evento >= dias_sem_atualizacao:
-            return "SEM ATUALIZAÇÃO"
-
-    return "NORMAL"
-
 # ==================================================
 # BUFFER DE ESCRITA
 # ==================================================
@@ -469,47 +367,31 @@ def processar_linha(pedido, row):
         log(f"⚠️ Pedido {pedido} não encontrado (linha mudou)")
         return
 
-    COL_DATA_PEDIDO = col("DATA") if "DATA" in header else None
-    data_pedido = row[COL_DATA_PEDIDO - 1] if COL_DATA_PEDIDO and len(row) >= COL_DATA_PEDIDO else ""
-
     link = row[COL_LINK - 1] if len(row) >= COL_LINK else ""
     obs_atual = row[COL_OBS - 1] if len(row) >= COL_OBS else ""
     hash_salvo = row[COL_HASH - 1] if len(row) >= COL_HASH else ""
     status_salvo = row[COL_STATUS_LOG - 1] if len(row) >= COL_STATUS_LOG else ""
-    data_evento_salva = row[COL_DATA_EVENTO - 1] if len(row) >= COL_DATA_EVENTO else ""
-    frete_raw = row[COL_FRETE - 1] if len(row) >= COL_FRETE else ""
-    frete = normalizar_frete(frete_raw)
 
     link = (link or "").strip()
     obs_atual = (obs_atual or "").strip().lower()
 
-    agora_str = datetime.now(ZoneInfo("America/Sao_Paulo")).replace(microsecond=0).isoformat()
+    agora_str = datetime.now(TZ).replace(microsecond=0).isoformat()
 
     log(f"➡️ Pedido {pedido} | Linha {row_atual} | Status atual: {status_salvo or '—'}")
+
     rastrear, motivo = deve_rastrear(status_salvo, obs_atual, link)
 
     if not rastrear:
         log(f"⏭️ Linha {row_atual} ignorada ({motivo})")
-
-        risco_atual = calcular_risco(
-            status_salvo,
-            data_evento_salva,
-            data_pedido,
-            frete
-        )
-
-        add_update(row_atual, COL_RISCO, risco_atual)
 
         if motivo == "link inválido":
             add_update(row_atual, COL_OBS, "⚠️ Link inválido ou vazio")
 
         return
 
-
-    # ✅ Sempre marca que o sistema olhou
-    ultima_salva = row[COL_ULTIMA_LEITURA - 1] if len(row) >= COL_ULTIMA_LEITURA else ""
-
+    # Sempre marca última leitura
     add_update(row_atual, COL_ULTIMA_LEITURA, agora_str)
+
     driver, wait = get_driver()
 
     try:
@@ -527,7 +409,6 @@ def processar_linha(pedido, row):
         if not eventos:
             add_update(row_atual, COL_STATUS_LOG, "ERRO")
             add_update(row_atual, COL_OBS, "❌ ERRO DE RASTREAMENTO — Nenhum evento encontrado")
-            add_update(row_atual, COL_RISCO, "CRÍTICO")
             return
 
         status_novo, motivo_falha = resolver_status_logistico(eventos)
@@ -539,18 +420,7 @@ def processar_linha(pedido, row):
         local = get_text(ultimo, "rptn-order-tracking-location")
         desc = get_text(ultimo, "rptn-order-tracking-description")
 
-        # ✅ Hash (muda se data/status/texto mudar)
         hash_novo = gerar_hash_evento(status_novo, data, label, desc, local)
-
-        # ✅ Risco baseado em:
-        # - ATRASO → data do pedido
-        # - SEM ATUALIZAÇÃO → data do evento
-        risco_novo = calcular_risco(
-            status_novo,
-            data,
-            data_pedido,
-            frete
-        )
 
         if motivo_falha:
             texto_obs = " | ".join(p for p in [
@@ -570,28 +440,21 @@ def processar_linha(pedido, row):
                 ] if p
             )
 
-        # ==================================================
-        # ✅ Regra central: só reage se hash mudou
-        # ==================================================
+        # Só reage se hash mudou
         if (hash_salvo or "").strip() == (hash_novo or "").strip():
-            # Não mudou: só atualiza risco (e última leitura já foi atualizada acima)
-            add_update(row_atual, COL_RISCO, risco_novo)
             return
 
-        # Mudou: grava tudo
+        # Mudou → grava tudo
         add_update(row_atual, COL_OBS, texto_obs)
         add_update(row_atual, COL_STATUS_LOG, status_novo)
         add_update(row_atual, COL_DATA_EVENTO, data)
         add_update(row_atual, COL_HASH, hash_novo)
-        add_update(row_atual, COL_RISCO, risco_novo)
 
     except Exception as e:
         log(f"❌ Erro linha {row_atual}: {e}")
 
         add_update(row_atual, COL_STATUS_LOG, "ERRO")
-        add_update(row_atual, COL_OBS, "❌ ERRO TÉCNICO — Falha ao consultar rastreio. Reprocessar manualmente.")
-        add_update(row_atual, COL_RISCO, "CRÍTICO")
-
+        add_update(row_atual, COL_OBS, "❌ ERRO TÉCNICO — Falha ao consultar rastreio.")
 
 if __name__ == "__main__":
     for aba in ABAS_RASTREAVEIS:
