@@ -88,13 +88,11 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     def col(nome):
         return header.index(nome) + 1
 
-    COL_LINK = col("Link")
-    COL_OBS = col("Observações")
-    COL_STATUS_LOG = col("Status Logístico")
-    COL_DATA_EVENTO = col("Data do Evento")
-    COL_HASH = col("Hash do Evento")
-    COL_ULTIMA_LEITURA = col("Data da Última Leitura")
-    COL_RISCO = col("Risco Logístico")
+    COL_LINK = col("LINK")
+    COL_OBS = col("ATUALIZAÇÃO")
+    COL_DATA_EVENTO = col("DATA DO EVENTO")
+    COL_HASH = col("HASH DO EVENTO")
+    COL_ULTIMA_LEITURA = col("ULTIMA LEITURA")
     COL_FRETE = col("Frete")
     COL_PEDIDO = col("Pedido")
 
