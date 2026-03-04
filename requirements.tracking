@@ -1,0 +1,7 @@
+# requirements.tracking.txt
+
+selenium
+webdriver-manager
+gspread
+google-auth
+pandas
