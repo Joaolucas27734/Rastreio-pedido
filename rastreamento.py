@@ -215,26 +215,34 @@ def get_text(parent, cls):
 def eh_entregue_valido(texto: str) -> bool:
     texto = normalizar_texto(texto)
 
-    # precisa conter raiz forte
-    if "entreg" not in texto and "assinad" not in texto:
-        return False
-
-    # bloqueios absolutos
-    bloqueios = [
-        "remetente",
-        "devol",
-        "retorno",
-        "return",
-        "reverse",
-        "não entregue",
-        "tentativa",
-        "falhou",
+    BLOQUEIOS = [
+        "saiu para entrega",
+        "em rota de entrega",
+        "out for delivery",
+        "aguardando entrega",
+        "em rota",
     ]
 
-    if any(b in texto for b in bloqueios):
+    if any(b in texto for b in BLOQUEIOS):
         return False
 
-    return True
+    PADROES_ENTREGA = [
+        "objeto entregue ao destinatario",
+        "objeto entregue ao destinatário",
+        "pedido entregue",
+        "pacote entregue",
+        "pacote entregue com sucesso",
+        "entrega concluida",
+        "entrega concluída",
+        "o pacote foi assinado",
+        "entregue ao destinatario",
+        "entregue ao destinatário",
+        "delivery successful",
+        "delivered",
+        "signed",
+    ]
+
+    return any(p in texto for p in PADROES_ENTREGA)
 
 def detectar_tipo_falha(texto_eventos: str):
     texto = normalizar_texto(texto_eventos)
@@ -333,8 +341,9 @@ def deve_rastrear(status_salvo, obs_atual, link):
 
 def resolver_status_logistico(eventos):
 
-    ultimo = eventos[0].find_element(By.CLASS_NAME, "rptn-order-tracking-text")
-    texto_ultimo = normalizar_texto(ultimo.text)
+    ultimo = eventos[0]
+    label = get_text(ultimo, "rptn-order-tracking-label")
+    texto_ultimo = normalizar_texto(label)
 
     # 1️⃣ ENTREGA sempre ganha
     if eh_entregue_valido(texto_ultimo):
@@ -424,7 +433,7 @@ def processar_linha(pedido, row):
 
         status_novo, motivo_falha = resolver_status_logistico(eventos)
 
-        ultimo = eventos[0].find_element(By.CLASS_NAME, "rptn-order-tracking-text")
+        ultimo = eventos[0]
 
         data = get_text(ultimo, "rptn-order-tracking-date")
         label = get_text(ultimo, "rptn-order-tracking-label")
