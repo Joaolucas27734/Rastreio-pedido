@@ -70,6 +70,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     global sheet, header
     global COL_LINK, COL_OBS, COL_STATUS_LOG
     global COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA
+    global COL_ESTUDO_DE_CASO
     global index_por_pedido
 
     log(f"\n🔄 Iniciando rastreamento da aba: {nome_aba}")
@@ -370,7 +371,7 @@ def resolver_status_logistico(eventos):
 def processar_linha(pedido, row):
     # Fala que essas variáveis são globais
     global COL_LINK, COL_OBS, COL_STATUS_LOG
-    global COL_ACOMPANHAMENTO, COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, COL_ESTUDO_DE_CASO, index_por_pedido
+    global COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, COL_ESTUDO_DE_CASO, index_por_pedido
 
     row_atual = index_por_pedido.get(str(pedido).strip())
     if not row_atual:
