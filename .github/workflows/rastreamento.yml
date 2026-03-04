@@ -1,0 +1,71 @@
+
+# .github/workflows/rastreamento.yml
+
+name: Atualizar Rastreios
+
+on:
+  # ⏰ Rodar automaticamente todos os dias às 03:59 BRT
+  schedule:
+    - cron: '59 6 * * *'   # 06:59 UTC = 03:59 BRT
+
+  # ▶️ Permite rodar manualmente (botão no GitHub)
+  workflow_dispatch:
+
+  # 🤖 Permite disparo externo (Streamlit / API)
+  repository_dispatch:
+    types:
+      - rodar-rastreamento
+
+jobs:
+  rastrear:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # 🐍 Python
+      # --------------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # --------------------------------------------------
+      # 🌐 Chrome (Selenium)
+      # --------------------------------------------------
+      - name: Instalar Google Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      # --------------------------------------------------
+      # 📚 Dependências
+      # --------------------------------------------------
+      - name: Instalar dependências
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.tracking.txt
+
+      # ==================================================
+      # 🔵 FASE 1 — LIMPEZA / ORGANIZAÇÃO
+      # Move pedidos já ENCERRADOS com base no status
+      # ==================================================
+      - name: Mover pedidos encerrados
+        env:
+          GCP_SERVICE_ACCOUNT_BASE64: ${{ secrets.CREDENTIALS_BASE64 }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          python tracking/mover_encerrados.py
+
+      # ==================================================
+      # 🟢 FASE 2 — RASTREAMENTO
+      # Atualiza STATUS LOGÍSTICO, RISCO, EVENTOS, etc.
+      # ==================================================
+      - name: Atualizar rastreios ativos
+        env:
+          GCP_SERVICE_ACCOUNT_BASE64: ${{ secrets.CREDENTIALS_BASE64 }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          python tracking/rastreamento.py
