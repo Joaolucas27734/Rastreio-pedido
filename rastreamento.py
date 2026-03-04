@@ -334,7 +334,7 @@ def resolver_status_logistico(eventos):
 
     # 1️⃣ ENTREGA sempre ganha
     if eh_entregue_valido(texto_ultimo):
-        return "ENTREGUE", ""
+        return "Entregue", ""
 
     # 2️⃣ FALHA se último evento for falha real
     tipo_falha, motivo_falha = detectar_tipo_falha(texto_ultimo)
@@ -346,7 +346,7 @@ def resolver_status_logistico(eventos):
         "aguardando retirada",
         "disponível para retirada",
     ]):
-        return "AGUARDANDO RETIRADA", ""
+        return "Aguardando retirada", ""
 
     # 4️⃣ Tentativa de entrega
     if any(p in texto_ultimo for p in [
@@ -358,7 +358,7 @@ def resolver_status_logistico(eventos):
         return "TENTATIVA DE ENTREGA", ""
 
     # 5️⃣ Padrão
-    return "EM TRÂNSITO", ""
+    return "Em trânsito", ""
 
 def processar_linha(pedido, row):
     row_atual = index_por_pedido.get(str(pedido).strip())
