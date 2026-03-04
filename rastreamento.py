@@ -97,7 +97,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     COL_ULTIMA_LEITURA = col("Data da Última Leitura")
     COL_RISCO = col("Risco Logístico")
     COL_FRETE = col("Frete")
-    COL_PEDIDO = header.index("Pedido")
+    COL_PEDIDO = col("Pedido")
 
     # 🔒 Snapshot da planilha
     dados = sheet.get_all_values()
@@ -106,8 +106,8 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     # 🔒 Índice estável por pedido
     index_por_pedido = {}
     for i, row in enumerate(linhas, start=2):
-        if len(row) > COL_PEDIDO:
-            pedido = str(row[COL_PEDIDO]).strip()
+        if len(row) >= COL_PEDIDO:
+    pedido = str(row[COL_PEDIDO - 1]).strip()
             if pedido:
                 index_por_pedido[pedido] = i
 
@@ -472,7 +472,7 @@ def processar_linha(pedido, row):
         log(f"⚠️ Pedido {pedido} não encontrado (linha mudou)")
         return
 
-    COL_DATA_PEDIDO = header.index("DATA") + 1 if "DATA" in header else None
+    COL_DATA_PEDIDO = col("DATA") if "DATA" in header else None
     data_pedido = row[COL_DATA_PEDIDO - 1] if COL_DATA_PEDIDO and len(row) >= COL_DATA_PEDIDO else ""
 
     link = row[COL_LINK - 1] if len(row) >= COL_LINK else ""
