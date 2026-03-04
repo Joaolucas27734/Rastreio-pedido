@@ -416,15 +416,18 @@ def processar_linha(pedido, row):
 
     try:
         driver.get(link)
+        time.sleep(1)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
         wait.until(
-            EC.any_of(
-                EC.presence_of_element_located((By.CLASS_NAME, "rptn-order-tracking-event")),
-                EC.presence_of_element_located((By.CLASS_NAME, "rptn-order-tracking-not-found"))
-            )
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".rptn-order-tracking"))
         )
 
-        eventos = driver.find_elements(By.CLASS_NAME, "rptn-order-tracking-event")
+        wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".rptn-order-tracking-event"))
+        )
+
+        eventos = driver.find_elements(By.CSS_SELECTOR, ".rptn-order-tracking-event")
 
         if not eventos:
             add_update(row_atual, COL_OBS, "❌ ERRO DE RASTREAMENTO — Nenhum evento encontrado")
