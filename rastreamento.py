@@ -366,8 +366,11 @@ def resolver_status_logistico(eventos):
     return "Em trânsito", ""
 
 def processar_linha(pedido, row):
-    row_atual = index_por_pedido.get(str(pedido).strip())
+    # Fala que essas variáveis são globais
+    global COL_LINK, COL_OBS, COL_STATUS_LOG
+    global COL_ACOMPANHAMENTO, COL_DATA_EVENTO, COL_HASH, COL_ULTIMA_LEITURA, index_por_pedido
 
+    row_atual = index_por_pedido.get(str(pedido).strip())
     if not row_atual:
         log(f"⚠️ Pedido {pedido} não encontrado (linha mudou)")
         return
@@ -463,9 +466,8 @@ def processar_linha(pedido, row):
 
     except Exception as e:
         log(f"❌ Erro linha {row_atual}: {e}")
-
-        add_update(row_atual, COL_STATUS_LOG, "ERRO")
         add_update(row_atual, COL_OBS, "❌ ERRO TÉCNICO — Falha ao consultar rastreio.")
+        add_update(row_atual, COL_ACOMPANHAMENTO, "Erro no rastreio")
 
 if __name__ == "__main__":
     for aba in ABAS_RASTREAVEIS:
