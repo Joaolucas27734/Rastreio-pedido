@@ -107,7 +107,7 @@ def rodar_rastreamento_para_aba(nome_aba: str):
     index_por_pedido = {}
     for i, row in enumerate(linhas, start=2):
         if len(row) >= COL_PEDIDO:
-    pedido = str(row[COL_PEDIDO - 1]).strip()
+            pedido = str(row[COL_PEDIDO - 1]).strip()
             if pedido:
                 index_por_pedido[pedido] = i
 
